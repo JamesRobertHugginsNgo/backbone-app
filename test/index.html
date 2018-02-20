@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset='utf-8'>
+
+  <title>Test Page</title>
+
+  <link href="../node_modules/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <style>
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <h1>Test Page</h1>
+
+    <p><script>document.write(new Date())</script></p>
+
+    <div id="table"></div>
+  </div>
+
+  <script src="../node_modules/babel-polyfill/dist/polyfill.min.js"></script>
+  <script src="../node_modules/jquery/dist/jquery.min.js"></script>
+  <script src="../node_modules/bootstrap/dist/js/bootstrap.min.js"></script>
+  <script src="../node_modules/underscore/underscore-min.js"></script>
+  <script src="../node_modules/backbone/backbone-min.js"></script>
+
+  <script src="../dist/scripts/backbone-odata4.js"></script>
+  <script>
+    const MyModel = BackboneOData4.Model.extend({
+      attributeTypes: {
+        Description: 'string',
+        DiscontinuedDate: Date,
+        ID: 'number',
+        Name: 'string',
+        Price: 'number',
+        Rating: 'number',
+        ReleaseDate: Date
+      }
+    });
+
+    const MyCollection = BackboneOData4.Collection.extend({
+      model: MyModel,
+      url: 'http://services.odata.org/V4/(S(jnliri45aox1yjga4gyovnlj))/OData/OData.svc/Products'
+    });
+
+    const myCollection = new MyCollection([], {
+      queryOptions: {
+        $count: true
+      }
+    });
+
+    const MyCollectionTableRow = BackboneOData4.View.extend({
+      tagName: 'tr',
+
+      template: _.template(`
+        <% for (let i = 0, l = obj.columns.length; i < l; i++) { %>
+        <td>
+          <%= obj.data[obj.columns[i].attribute] %>
+        </td>
+        <% } %>
+      `),
+
+      columns: [],
+
+      initialize: function(opts) {
+        this.superView = opts.superView;
+        this.columns = opts.columns || this.columns;
+        this.listenTo(this.model, 'change', this.render);
+      },
+
+      render: function() {
+        this.$el.html(this.template({
+          columns: this.superView.columns,
+          data: this.model.toJSON({ deep: false })
+        }))
+      }
+    });
+
+    const MyCollectionTable = BackboneOData4.View.extend({
+      tagName: 'table',
+
+      className: 'table table-sm',
+
+      template: _.template(`
+        <thead>
+          <tr>
+            <% for (let i = 0, l = obj.columns.length; i < l; i++) { %>
+            <th>
+              <%= obj.columns[i].display %>
+              <div style="margin-top: .3rem;"><input type="text" class="form-control"></div>
+            </th>
+            <% } %>
+          </tr>
+        </thead>
+        <tbody>
+        </tbody>
+      `),
+
+      columns: [{
+        attribute: 'ID',
+        display: 'ID'
+      }, {
+        attribute: 'Name',
+        display: 'Name'
+      }, {
+        attribute: 'Description',
+        display: 'Description'
+      }, {
+        attribute: 'ReleaseDate',
+        display: 'Release Date'
+      }, {
+        attribute: 'DiscontinuedDate',
+        display: 'Discontinued Date',
+        type: 'date'
+      }, {
+        attribute: 'Rating',
+        display: 'Rating'
+      }, {
+        attribute: 'Price',
+        display: 'Price'
+      }],
+
+      subViews: [],
+
+      initialize: function(opts = {}) {
+        this.columns = opts.columns || this.columns;
+        this.subViews = [];
+        this.listenTo(this.model, 'update', this.render);
+      },
+
+      render() {
+        for (let i = 0, l = this.subViews.length; i < l; i++) {
+          this.subViews[i].remove();
+        }
+        this.subViews = [];
+
+        this.$el.html(this.template({
+          columns: this.columns
+        }));
+
+        const $tbody = this.$el.find('tbody');
+        for (let i = 0, l = this.model.length; i < l; i++) {
+          const subView = new MyCollectionTableRow({
+            model: this.model.at(i),
+            superView: this
+          });
+          this.subViews.push(subView);
+          $tbody.append(subView.$el);
+          subView.render();
+        }
+      }
+    });
+
+    const myCollectionTable = new MyCollectionTable({
+      model: myCollection
+    });
+    $('#table').append(myCollectionTable.$el);
+    myCollectionTable.render();
+
+    myCollection.fetch();
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,1 @@
+{"version":3,"sources":["style.min.css"],"names":[],"mappings":"AAAA,cACE,sBAAuB,AACvB,WAAY,AAEZ,EACE,UAAY,CACb,CACF","file":"style.min.css","sourcesContent":[".sample_style {\n  background-color: #000;\n  color: #fff;\n\n  a {\n    color: #fff;\n  }\n}\n"]}
